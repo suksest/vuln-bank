@@ -6,7 +6,16 @@ pipeline {
             steps {
                 sh 'echo "Secret scanning..."'
                 sh trufflehog --no-update git file://. --json | tee trufflehog.json
-                archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
+            }
+
+            post {
+                success {
+                    sh 'echo "Secret scanning completed successfully"'
+                    archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
+                }
+                failure {
+                    sh 'echo "Secret scanning failed"'
+                }
             }
         }
         stage('SCA') {
