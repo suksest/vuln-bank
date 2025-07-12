@@ -4,14 +4,20 @@ pipeline {
     stages {
         stage('Secret Scanning') {
             steps {
-                sh 'echo "Secret scanning..."'
-                sh trufflehog --no-update git file://. --json | tee trufflehog.json
+                script {
+                    sh 'echo "Secret scanning..."'
+                    sh '''
+                        trufflehog --no-update git file://. --json | tee trufflehog.json
+                    '''
+                }
             }
-
             post {
+                always {
+                    // Always archive artifacts regardless of success/failure
+                    archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
+                }
                 success {
                     sh 'echo "Secret scanning completed successfully"'
-                    archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
                 }
                 failure {
                     sh 'echo "Secret scanning failed"'
@@ -40,4 +46,3 @@ pipeline {
         }
     }
 }
-
