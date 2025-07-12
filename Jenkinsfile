@@ -13,7 +13,6 @@ pipeline {
             }
             post {
                 always {
-                    // Always archive artifacts regardless of success/failure
                     archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
                 }
                 success {
@@ -29,6 +28,18 @@ pipeline {
                 sh 'echo "SCA..."'
                 sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'vuln-bank-syft.json', fingerprint: true
+                    archiveArtifacts artifacts: 'vuln-bank-grype.json', fingerprint: true
+                }
+                success {
+                    sh 'echo "SCA completed successfully"'
+                }
+                failure {
+                    sh 'echo "SCA failed"'
+                }
             }
         }
         stage('SAST') {
