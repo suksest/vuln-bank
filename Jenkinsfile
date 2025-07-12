@@ -27,6 +27,8 @@ pipeline {
         stage('SCA') {
             steps {
                 sh 'echo "SCA..."'
+                sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
+                sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
             }
         }
         stage('SAST') {
