@@ -62,7 +62,7 @@ pipeline {
                         sh """
                             curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
                                 "${SONAR_HOST_URL}/api/issues/search?projectKeys=${env.PROJECT_NAME}" \
-                                > sonarqube-results/issues.json || true
+                                > sonarqube-results-issues.json || true
                         """
                     }
                 }
