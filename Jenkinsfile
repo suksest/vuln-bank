@@ -50,32 +50,45 @@ pipeline {
                 }
             }
         }
-        stage('Upload to Dependency-Track') {
-            steps {
-                script {
-                    sh 'echo "Uploading Grype results to Dependency-Track..."'
-                    sh """
-                        curl -X POST "${DEPENDENCY_TRACK_URL}/api/v1/bom" \\
-                             -H "Content-Type: multipart/form-data" \\
-                             -H "X-Api-Key: ${DEPENDENCY_TRACK_API_KEY}" \\
-                             -F "projectName=${params.PROJECT_NAME}" \\
-                             -F "projectVersion=${params.PROJECT_VERSION}" \\
-                             -F "bom=@./vuln-bank-grype.json"
-                    """
-                }
-            }
-            post {
-                success {
-                    sh 'echo "Successfully uploaded to Dependency-Track"'
-                }
-                failure {
-                    sh 'echo "Dependency-Track upload failed"'
-                }
-            }
-        }
         stage('SAST') {
             steps {
                 sh 'echo "SAST..."'
+                script {
+                    def scannerHome = tool 'sonarscanner'
+                    withSonarQubeEnv('sonar-vulnbank-devsecops') {
+                        sh """${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=${params.PROJECT_NAME} \
+                        -Dsonar.organization=suksest \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.version=3.9"""
+                    }
+
+                    withCredentials([string(credentialsId: 'sonar-vulnbank-devsecops', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                            curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
+                                "${SONAR_HOST_URL}/api/issues/search?projectKeys=${params.PROJECT_NAME}" \
+                                > sonarqube-results/issues.json || true
+                        """
+                    }
+                }
+                script {
+                    sh """
+                        curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
+                            "${SONAR_HOST_URL}/api/issues/search?projectKeys=${SONAR_PROJECT_KEY}" \
+                            > sonarqube-results-issues.json || true
+                    """
+                }
+            }
+            post {sonarqube-results/
+                always {
+                    archiveArtifacts artifacts: 'sonarqube-results-issues.json', fingerprint: true
+                }
+                success {
+                    sh 'echo "SAST completed successfully"'
+                }
+                failure {
+                    sh 'echo "SAST failed"'
+                }
             }
         }
         stage('DAST') {
