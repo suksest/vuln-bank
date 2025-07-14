@@ -79,7 +79,7 @@ pipeline {
                     """
                 }
             }
-            post {sonarqube-results/
+            post {
                 always {
                     archiveArtifacts artifacts: 'sonarqube-results-issues.json', fingerprint: true
                 }
