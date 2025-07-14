@@ -60,18 +60,11 @@ pipeline {
 
                     withSonarQubeEnv(installationName: 'sonar-vulnbank-devsecops', envOnly: true) {
                         sh """
-                            curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
+                            curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
                                 "${SONAR_HOST_URL}/api/issues/search?projectKeys=${env.PROJECT_NAME}" \
                                 > sonarqube-results/issues.json || true
                         """
                     }
-                }
-                script {
-                    sh """
-                        curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
-                            "${SONAR_HOST_URL}/api/issues/search?projectKeys=${SONAR_PROJECT_KEY}" \
-                            > sonarqube-results-issues.json || true
-                    """
                 }
             }
             post {
