@@ -92,7 +92,7 @@ pipeline {
                     """
                     
                     sh "sleep 30"
-                    sh "docker logs ${env.APP_NAME}-${env.BUILD_ID}"
+                    sh "docker logs ${env.PROJECT_NAME}-${env.BUILD_ID}"
                 }
             }
         }
