@@ -79,6 +79,23 @@ pipeline {
                 }
             }
         }
+        stage('Build & Deploy to Staging') {
+            steps {
+                script {
+                    sh 'echo "Building Docker image..."'
+                    
+                    sh 'echo "Starting application container..."'
+                    sh """
+                        docker compose up -d --build
+
+                        docker image prune -f
+                    """
+                    
+                    sh "sleep 30"
+                    sh "docker logs ${env.APP_NAME}-${env.BUILD_ID}"
+                }
+            }
+        }
         stage('DAST') {
             steps {
                 sh 'echo "DAST..."'
