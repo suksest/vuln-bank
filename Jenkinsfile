@@ -1,12 +1,7 @@
 pipeline {
     agent any
-    parameters {
-        string(name: 'PROJECT_NAME', defaultValue: 'vuln-bank', description: 'Dependency-Track project name')
-        string(name: 'PROJECT_VERSION', defaultValue: '1.0.0', description: 'Dependency-Track project version')
-    }
     environment {
-        DEPENDENCY_TRACK_URL = 'http://192.168.56.16:8082'
-        DEPENDENCY_TRACK_API_KEY = credentials('dependency-track-api-key')
+        PROJECT_NAME = "vuln-bank"
     }
     
     stages {
@@ -57,7 +52,7 @@ pipeline {
                     def scannerHome = tool 'sonarscanner'
                     withSonarQubeEnv('sonar-vulnbank-devsecops') {
                         sh """${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=${params.PROJECT_NAME} \
+                        -Dsonar.projectKey=${env.PROJECT_NAME} \
                         -Dsonar.organization=suksest \
                         -Dsonar.sources=. \
                         -Dsonar.python.version=3.9"""
@@ -66,7 +61,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonar-vulnbank-devsecops', variable: 'SONAR_TOKEN')]) {
                         sh """
                             curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
-                                "${SONAR_HOST_URL}/api/issues/search?projectKeys=${params.PROJECT_NAME}" \
+                                "${SONAR_HOST_URL}/api/issues/search?projectKeys=${env.PROJECT_NAME}" \
                                 > sonarqube-results/issues.json || true
                         """
                     }
