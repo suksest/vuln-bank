@@ -58,7 +58,7 @@ pipeline {
                         -Dsonar.python.version=3.9"""
                     }
 
-                    withCredentials([string(credentialsId: 'sonar-vulnbank-devsecops', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv(installationName: 'sonar-vulnbank-devsecops', envOnly: true) {
                         sh """
                             curl -s -H "Authorization: Bearer ${SONAR_TOKEN}" \
                                 "${SONAR_HOST_URL}/api/issues/search?projectKeys=${env.PROJECT_NAME}" \
