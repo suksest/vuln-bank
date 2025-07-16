@@ -77,6 +77,22 @@ pipeline {
                     script {
                         def qualityGate = waitForQualityGate()
                         echo "SonarCloud quality gate status: ${qualityGate.status}"
+
+                        def response = ""
+                        withSonarQubeEnv(installationName: 'sonar-vulnbank-devsecops', envOnly: true) {
+                            response = sh """
+                                curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
+                                    "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${env.PROJECT_NAME}"
+                            """
+                        }
+
+                        def json = readJSON text: response.contents
+
+                        echo "=== Detailed Quality Gate Status ==="
+                        echo "Project: ${json.projectStatus.projectKey}"
+                        echo "Overall Status: ${json.projectStatus.status}"
+                        echo "Conditions: ${json.projectStatus.conditions}"
+                        echo "=== Detailed Quality Gate Status ==="
                     }
                 }
                 failure {
