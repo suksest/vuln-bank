@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         PROJECT_NAME = "vuln-bank"
-        ZAP_API_KEY = credentials('zap-api-key')
     }
     
     stages {
@@ -107,30 +106,40 @@ pipeline {
                     def TARGET_URL = "http://${APP_IP}:5000"
                     
                     sh "echo 'Target application URL: ${TARGET_URL}'"
-                    
-                    sh """
-                        docker run --name zap-${env.BUILD_ID} -u root -p 8090:8080 \
-                        -v ${WORKSPACE}:/zap/wrk/ --network zapnet \
-                        -i zaproxy/zap-stable \
-                        zap-baseline.py -t ${TARGET_URL} -J zap-report.json
-                    """
+
+                    def zapExitCode = sh(
+                        script: """
+                            docker run --name zap-${env.BUILD_ID} -u root -p 8090:8080 \
+                            -v ${WORKSPACE}:/zap/wrk/ --network zapnet \
+                            -i zaproxy/zap-stable \
+                            zap-baseline.py -t ${TARGET_URL} -J zap-report.json
+                        """,
+                        returnStatus: true
+                    )
 
                     sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
 
-                    // sh "echo ${?}"
+                    if (zapExitCode == 0) {
+                        echo "ZAP scan completed successfully with no warnings"
+                    } else if (zapExitCode == 1) {
+                        unstable("ZAP scan completed with blocker issue(s)")
+                    } else if (zapExitCode == 2) {
+                        unstable("ZAP scan found potential issue(s)")
+                    } else {
+                        error("ZAP scan failed with exit code ${zapExitCode}")
+                    }
                 }
             }
-            // post {
-                // always {
-                //     archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
+            post {
+                always {
+                    archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
                     
-                //     // Cleanup containers
-                //     sh "docker stop zap-${env.BUILD_ID} || true"
-                //     sh "echo ${?}"
-                //     sh "docker rm zap-${env.BUILD_ID} || true"
-                //     sh "echo ${?}"
-                // }
-            // }
+                    // Cleanup containers
+                    sh "docker stop zap-${env.BUILD_ID} || true"
+                    sh "docker rm zap-${env.BUILD_ID} || true"
+                    sh "docker compose -f docker-compose-ci.yml down || true"
+                }
+            }
         }
         stage('Discord Notification') {
             steps {
