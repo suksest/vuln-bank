@@ -2,6 +2,7 @@ pipeline {
     agent any
     environment {
         PROJECT_NAME = "vuln-bank"
+        ZAP_API_KEY = credentials('zap-api-key')
     }
     
     stages {
@@ -55,6 +56,7 @@ pipeline {
                         -Dsonar.projectKey=${env.PROJECT_NAME} \
                         -Dsonar.organization=suksest \
                         -Dsonar.sources=. \
+                        -Dsonar.excludes=*.json \
                         -Dsonar.python.version=3.9"""
                     }
 
@@ -82,11 +84,9 @@ pipeline {
         stage('Build & Deploy to Staging') {
             steps {
                 script {
-                    sh 'echo "Building Docker image..."'
-                    
                     sh 'echo "Starting application container..."'
                     sh """
-                        docker compose up -d --build
+                        docker compose up -d --build --remove-orphans
 
                         docker image prune -f
                     """
@@ -98,7 +98,73 @@ pipeline {
         }
         stage('DAST') {
             steps {
-                sh 'echo "DAST..."'
+                script {
+                    def APP_IP = sh(
+                        script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${env.PROJECT_NAME}-${env.BUILD_ID}", 
+                        returnStdout: true
+                    ).trim()
+                    
+                    def TARGET_URL = "http://${APP_IP}:5000"
+                    
+                    sh "echo 'Target application URL: ${TARGET_URL}'"
+                    
+                    // Start ZAP container
+                    sh """
+                        docker run -d --name zap-${env.BUILD_ID} \
+                            -u zap \
+                            -p 8090:8080 \
+                            -i zaproxy/zap-stable \
+                            zap.sh -daemon \
+                            -host 0.0.0.0 \
+                            -port 8080 \
+                            -config api.addrs.addr.name=.* \
+                            -config api.addrs.addr.regex=true \
+                            -config api.key=${env.ZAP_API_KEY}
+                    """
+                    
+                    // Wait for ZAP to initialize
+                    sh 'sleep 30'
+                    
+                    // Run ZAP spidering
+                    sh """
+                        docker exec zap-${env.BUILD_ID} zap-cli \
+                            --api-key ${env.ZAP_API_KEY} \
+                            spider ${TARGET_URL}
+                    """
+                    
+                    // Run ZAP active scan
+                    sh """
+                        docker exec zap-${env.BUILD_ID} zap-cli \
+                            --api-key ${env.ZAP_API_KEY} \
+                            active-scan ${TARGET_URL}
+                    """
+                    
+                    // Generate reports
+                    sh """
+                        docker exec zap-${env.BUILD_ID} zap-cli \
+                            --api-key ${env.ZAP_API_KEY} \
+                            report -o /zap/zap-report.html -f html
+                            
+                        docker exec zap-${env.BUILD_ID} zap-cli \
+                            --api-key ${env.ZAP_API_KEY} \
+                            report -o /zap/zap-report.xml -f xml
+                    """
+                    
+                    // Copy reports from container
+                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.html ."
+                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.xml ."
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'zap-report.html,zap-report.xml', fingerprint: true
+                    
+                    // Cleanup containers
+                    sh "docker stop zap-${env.BUILD_ID} || true"
+                    sh "docker rm zap-${env.BUILD_ID} || true"
+                    sh "docker stop ${env.PROJECT_NAME}-${env.BUILD_ID} || true"
+                    sh "docker rm ${env.PROJECT_NAME}-${env.BUILD_ID} || true"
+                }
             }
         }
         stage('Discord Notification') {
