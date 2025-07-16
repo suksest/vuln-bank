@@ -113,6 +113,7 @@ pipeline {
                         docker run -d --name zap-${env.BUILD_ID} \
                             -u zap \
                             -p 8090:8080 \
+                            -v ${PWD}:/zap/wrk/ 
                             -i zaproxy/zap-stable \
                             zap.sh -daemon \
                             -host 0.0.0.0 \
