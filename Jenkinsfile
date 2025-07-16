@@ -100,7 +100,7 @@ pipeline {
             steps {
                 script {
                     def APP_IP = sh(
-                        script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${env.PROJECT_NAME}-${env.BUILD_ID}", 
+                        script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${env.PROJECT_NAME}", 
                         returnStdout: true
                     ).trim()
                     
