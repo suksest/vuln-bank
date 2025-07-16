@@ -125,45 +125,25 @@ pipeline {
                     // Wait for ZAP to initialize
                     sh 'sleep 30'
                     
-                    // Run ZAP spidering
+                    // Run ZAP full scan
                     sh """
-                        docker exec zap-${env.BUILD_ID} zap-cli \
-                            --api-key ${env.ZAP_API_KEY} \
-                            spider ${TARGET_URL}
-                    """
-                    
-                    // Run ZAP active scan
-                    sh """
-                        docker exec zap-${env.BUILD_ID} zap-cli \
-                            --api-key ${env.ZAP_API_KEY} \
-                            active-scan ${TARGET_URL}
-                    """
-                    
-                    // Generate reports
-                    sh """
-                        docker exec zap-${env.BUILD_ID} zap-cli \
-                            --api-key ${env.ZAP_API_KEY} \
-                            report -o /zap/zap-report.html -f html
-                            
-                        docker exec zap-${env.BUILD_ID} zap-cli \
-                            --api-key ${env.ZAP_API_KEY} \
-                            report -o /zap/zap-report.xml -f xml
+                        docker exec zap-${env.BUILD_ID} zap-full-scan.py \
+                            -t ${TARGET_URL} \
+                            -J zap-report.json
                     """
                     
                     // Copy reports from container
-                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.html ."
-                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.xml ."
+                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.json ."
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap-report.html,zap-report.xml', fingerprint: true
+                    archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
                     
                     // Cleanup containers
                     sh "docker stop zap-${env.BUILD_ID} || true"
                     sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "docker stop ${env.PROJECT_NAME}-${env.BUILD_ID} || true"
-                    sh "docker rm ${env.PROJECT_NAME}-${env.BUILD_ID} || true"
+                    sh "docker compose down ${env.PROJECT_NAME}-${env.BUILD_ID} --remove-orphans || true"
                 }
             }
         }
