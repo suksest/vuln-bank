@@ -109,7 +109,7 @@ pipeline {
                     sh "echo 'Target application URL: ${TARGET_URL}'"
                     
                     sh """
-                        docker run --name zap-${env.BUILD_ID} -u jenkins -p 8090:8080 \
+                        docker run --name zap-${env.BUILD_ID} -u root -p 8090:8080 \
                         -v ${WORKSPACE}:/zap/wrk/ --network zapnet \
                         -i zaproxy/zap-stable \
                         zap-baseline.py -t ${TARGET_URL} -J zap-report.json
