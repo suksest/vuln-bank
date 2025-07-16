@@ -115,17 +115,16 @@ pipeline {
                         zap-baseline.py -t ${TARGET_URL} -J zap-report.json
                     """
 
-                    // sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
+                    sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
                 }
             }
             post {
                 always {
-                    // archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
+                    archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
                     
                     // Cleanup containers
                     sh "docker stop zap-${env.BUILD_ID} || true"
                     sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "docker compose -f docker-compose-ci.yml down || true"
                 }
             }
         }
