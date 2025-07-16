@@ -40,3 +40,4 @@ volumes:
 networks:
   vuln_network:
     driver: bridge
+    name: vuln_network

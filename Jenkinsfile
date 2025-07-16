@@ -114,6 +114,7 @@ pipeline {
                             -u zap \
                             -p 8090:8080 \
                             -v ${WORKSPACE}:/zap/wrk/ \
+                            --network vuln_network
                             -i zaproxy/zap-stable \
                             zap.sh -daemon \
                             -host 0.0.0.0 \
