@@ -108,34 +108,12 @@ pipeline {
                     
                     sh "echo 'Target application URL: ${TARGET_URL}'"
                     
-                    // Start ZAP container
                     sh """
-                        docker run -d --name zap-${env.BUILD_ID} \
-                            -u zap \
-                            -p 8090:8080 \
-                            -v ${WORKSPACE}:/zap/wrk/ \
-                            --network vuln_network \
-                            -i zaproxy/zap-stable \
-                            zap.sh -daemon \
-                            -host 0.0.0.0 \
-                            -port 8080 \
-                            -config api.addrs.addr.name=.* \
-                            -config api.addrs.addr.regex=true \
-                            -config api.key=${env.ZAP_API_KEY}
+                        docker run --name zap -u zap -p 8090:8080 \
+                        -v ${WORKSPACE}:/zap/wrk/ --network zapnet \
+                        -i zaproxy/zap-stable \
+                        zap-baseline.py -t ${TARGET_URL} -J zap-report.json
                     """
-                    
-                    // Wait for ZAP to initialize
-                    sh 'sleep 30'
-                    
-                    // Run ZAP full scan
-                    sh """
-                        docker exec zap-${env.BUILD_ID} zap-full-scan.py \
-                            -t ${TARGET_URL} \
-                            -J zap-report.json
-                    """
-                    
-                    // Copy reports from container
-                    sh "docker cp zap-${env.BUILD_ID}:/zap/zap-report.json ."
                 }
             }
             post {
