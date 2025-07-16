@@ -80,13 +80,16 @@ pipeline {
 
                         def response = ""
                         withSonarQubeEnv(installationName: 'sonar-vulnbank-devsecops', envOnly: true) {
-                            response = sh """
-                                curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
-                                    "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${env.PROJECT_NAME}"
-                            """
+                            response = sh (
+                                script: """
+                                    curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
+                                        "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${env.PROJECT_NAME}"
+                                """,
+                                returnStdout: true
+                            ).trim()
                         }
 
-                        def json = readJSON text: response.contents
+                        def json = readJSON text: response
 
                         echo "=== Detailed Quality Gate Status ==="
                         echo "Project: ${json.projectStatus.projectKey}"
