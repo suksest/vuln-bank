@@ -120,7 +120,7 @@ pipeline {
                     // sh "echo ${?}"
                 }
             }
-            post {
+            // post {
                 // always {
                 //     archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
                     
@@ -130,7 +130,7 @@ pipeline {
                 //     sh "docker rm zap-${env.BUILD_ID} || true"
                 //     sh "echo ${?}"
                 // }
-            }
+            // }
         }
         stage('Discord Notification') {
             steps {
