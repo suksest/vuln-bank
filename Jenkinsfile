@@ -117,7 +117,7 @@ pipeline {
 
                     sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
 
-                    sh "echo $?"
+                    sh "echo ${?}"
                 }
             }
             post {
@@ -126,9 +126,9 @@ pipeline {
                     
                     // Cleanup containers
                     sh "docker stop zap-${env.BUILD_ID} || true"
-                    sh "echo $?"
+                    sh "echo ${?}"
                     sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "echo $?"
+                    sh "echo ${?}"
                 }
             }
         }
