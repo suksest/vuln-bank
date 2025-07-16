@@ -92,7 +92,7 @@ pipeline {
                     """
                     
                     sh "sleep 30"
-                    sh "docker compose logs"
+                    sh "docker compose -f docker-compose-ci.yml logs"
                 }
             }
         }
@@ -109,7 +109,7 @@ pipeline {
                     sh "echo 'Target application URL: ${TARGET_URL}'"
                     
                     sh """
-                        docker run --name zap -u zap -p 8090:8080 \
+                        docker run --name zap-${env.BUILD_ID} -u jenkins -p 8090:8080 \
                         -v ${WORKSPACE}:/zap/wrk/ --network zapnet \
                         -i zaproxy/zap-stable \
                         zap-baseline.py -t ${TARGET_URL} -J zap-report.json
@@ -123,7 +123,7 @@ pipeline {
                     // Cleanup containers
                     sh "docker stop zap-${env.BUILD_ID} || true"
                     sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "docker compose down ${env.PROJECT_NAME}-${env.BUILD_ID} --remove-orphans || true"
+                    sh "docker compose -f docker-compose-ci.yml down ${env.PROJECT_NAME}-${env.BUILD_ID} --remove-orphans || true"
                 }
             }
         }
