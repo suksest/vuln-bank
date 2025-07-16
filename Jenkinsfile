@@ -123,7 +123,7 @@ pipeline {
                     // Cleanup containers
                     sh "docker stop zap-${env.BUILD_ID} || true"
                     sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "docker compose -f docker-compose-ci.yml down --remove-orphans || true"
+                    sh "docker compose -f docker-compose-ci.yml down || true"
                 }
             }
         }
