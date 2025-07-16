@@ -31,6 +31,12 @@ pipeline {
                 sh 'echo "SCA..."'
                 sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
+
+                def totalVulns = sh(
+                    script: "jq '.matches | length' grype-report.json",
+                    returnStdout: true
+                ).trim()
+                echo "Total number of vulnerabilities: ${totalVulns}"
             }
             post {
                 always {
@@ -92,7 +98,6 @@ pipeline {
                         def json = readJSON text: response
 
                         echo "=== Detailed Quality Gate Status ==="
-                        echo "Project: ${json.projectStatus.projectKey}"
                         echo "Overall Status: ${json.projectStatus.status}"
                         echo "Conditions: ${json.projectStatus.conditions}"
                         echo "=== Detailed Quality Gate Status ==="
