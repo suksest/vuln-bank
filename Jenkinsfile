@@ -117,19 +117,19 @@ pipeline {
 
                     sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
 
-                    sh "echo ${?}"
+                    // sh "echo ${?}"
                 }
             }
             post {
-                always {
-                    archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
+                // always {
+                //     archiveArtifacts artifacts: 'zap-report.json', fingerprint: true
                     
-                    // Cleanup containers
-                    sh "docker stop zap-${env.BUILD_ID} || true"
-                    sh "echo ${?}"
-                    sh "docker rm zap-${env.BUILD_ID} || true"
-                    sh "echo ${?}"
-                }
+                //     // Cleanup containers
+                //     sh "docker stop zap-${env.BUILD_ID} || true"
+                //     sh "echo ${?}"
+                //     sh "docker rm zap-${env.BUILD_ID} || true"
+                //     sh "echo ${?}"
+                // }
             }
         }
         stage('Discord Notification') {
