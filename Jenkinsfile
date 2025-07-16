@@ -86,7 +86,7 @@ pipeline {
                             """
                         }
 
-                        def json = readJSON text: response.contents
+                        def json = readJSON text: response
 
                         echo "=== Detailed Quality Gate Status ==="
                         echo "Project: ${json.projectStatus.projectKey}"
