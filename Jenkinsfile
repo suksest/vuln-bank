@@ -114,6 +114,8 @@ pipeline {
                         -i zaproxy/zap-stable \
                         zap-baseline.py -t ${TARGET_URL} -J zap-report.json
                     """
+
+                    sh "docker cp zap-${env.BUILD_ID}:/zap/wrk/zap-report.json ."
                 }
             }
             post {
