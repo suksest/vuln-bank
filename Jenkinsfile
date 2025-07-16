@@ -86,7 +86,7 @@ pipeline {
                 script {
                     sh 'echo "Starting application container..."'
                     sh """
-                        docker compose up -d --build --remove-orphans
+                        docker compose -f docker-compose-ci.yml up -d --build --remove-orphans
 
                         docker image prune -f
                     """
