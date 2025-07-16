@@ -74,6 +74,10 @@ pipeline {
                 }
                 success {
                     sh 'echo "SAST completed successfully"'
+                    script {
+                        def qualityGate = waitForQualityGate()
+                        echo "SonarCloud quality gate status: ${qualityGate.status}"
+                    }
                 }
                 failure {
                     sh 'echo "SAST failed"'
