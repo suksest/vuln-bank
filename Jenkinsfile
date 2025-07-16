@@ -33,7 +33,7 @@ pipeline {
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
                 script {
                     def totalVulns = sh(
-                        script: "jq '.matches | length' grype-report.json",
+                        script: "jq '.matches | length' vuln-bank-grype.json",
                         returnStdout: true
                     ).trim()
                     echo "Total number of vulnerabilities: ${totalVulns}"
