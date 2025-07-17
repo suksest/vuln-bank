@@ -32,9 +32,10 @@ pipeline {
                 sh 'echo "SCA..."'
                 sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
+                sh 'sleep 30'
                 script {
                     def totalVulns = sh(
-                        script: "jq '.vulnerabilities[] | length' vuln-bank-grype.json",
+                        script: "jq '.vulnerabilities | length' vuln-bank-grype.json",
                         returnStdout: true
                     ).trim()
                     
@@ -188,6 +189,9 @@ pipeline {
                     description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}",
                 )
             }
+        }
+        success {
+            cleanWs()
         }
     }
 }
