@@ -11,13 +11,27 @@ pipeline {
                 script {
                     sh 'echo "Secret scanning..."'
                     sh '''
-                        trufflehog --no-update git file://. --json | tee trufflehog.json
+                        trufflehog --no-update git file://. --json | tee trufflehog-git.json
+                        trufflehog --no-update filesytem . --json | tee trufflehog-filesystem.json
                     '''
+
+                    script {
+                        def secretsCount = 0
+                        if (fileExists('trufflehog-git.json')) {
+                            secretsCount = sh(script: "grep -c '^{' trufflehog-git.json || true", returnStdout: true).trim()
+                        }
+                        if (fileExists('trufflehog-filesystem.json')) {
+                            secretsCount += sh(script: "grep -c '^{' trufflehog-filesystem.json || true", returnStdout: true).trim()
+                        }
+                        def secretsReport = "🔑 **Secret Scan**: ${secretsCount} secrets found"
+                        reportTemplate = secretsReport
+                    }
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'trufflehog.json', fingerprint: true
+                    archiveArtifacts artifacts: 'trufflehog-git.json', fingerprint: true
+                    archiveArtifacts artifacts: 'trufflehog-filesystem.json', fingerprint: true
                 }
                 success {
                     sh 'echo "Secret scanning completed successfully"'
@@ -187,7 +201,9 @@ pipeline {
                 discordSend(
                     title: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.",
                     webhookURL: DISCORD_WEBHOOK,
-                    description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}",
+                    description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}\n\n${env.BUILD_URL}",
+                    unstable: true,
+                    result: currentBuild.currentResult
                 )
             }
         }
