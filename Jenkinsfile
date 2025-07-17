@@ -92,6 +92,14 @@ pipeline {
                                 > sonarqube-results-issues.json || true
                         """
                     }
+
+                    def sastCount = 0
+                    if (fileExists('sonarqube-results-issues.json')) {
+                        sastCount = sh(script: "jq '.total' sonarqube-results-issues.json", returnStdout: true).trim()
+                    }
+
+                    def sastReport = "🔍 **SAST**: ${sastCount} issues found"
+                    reportTemplate = reportTemplate + "\n" + sastReport
                 }
             }
             post {
@@ -100,27 +108,6 @@ pipeline {
                 }
                 success {
                     sh 'echo "SAST completed successfully"'
-                    script {
-                        def qualityGate = waitForQualityGate()
-                        echo "SonarCloud quality gate status: ${qualityGate.status}"
-
-                        def response = ""
-                        withSonarQubeEnv(installationName: 'sonar-vulnbank-devsecops', envOnly: true) {
-                            response = sh (
-                                script: """
-                                    curl -s -H "Authorization: Bearer ${SONAR_AUTH_TOKEN}" \
-                                        "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${env.PROJECT_NAME}"
-                                """,
-                                returnStdout: true
-                            ).trim()
-                        }
-
-                        def json = readJSON text: response
-
-                        def sastReport = "🔍 **SAST**: ${json.projectStatus.status}"
-                        reportTemplate = reportTemplate + "\n" + sastReport
-                    }
-                }
                 failure {
                     sh 'echo "SAST failed"'
                 }
