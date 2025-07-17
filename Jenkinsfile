@@ -108,6 +108,7 @@ pipeline {
                 }
                 success {
                     sh 'echo "SAST completed successfully"'
+                }
                 failure {
                     sh 'echo "SAST failed"'
                 }
