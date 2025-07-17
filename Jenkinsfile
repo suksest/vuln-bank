@@ -1,3 +1,4 @@
+def reportTemplate = "empty"
 pipeline {
     agent any
     environment {
@@ -32,11 +33,26 @@ pipeline {
                 sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
                 script {
-                    def totalVulns = sh(
-                        script: "jq '.matches | length' vuln-bank-grype.json",
+                    def severityCountsJson = sh(
+                        script: "jq 'reduce .vulnerabilities[].ratings[].severity as \\$s ({}; .[\\$s] = (.[\\$s] // 0) + 1)' vuln-bank-grype.json",
                         returnStdout: true
                     ).trim()
-                    echo "Total number of vulnerabilities: ${totalVulns}"
+
+                    def counts = new groovy.json.JsonSlurper().parseText(severityCountsJson)
+                    def lowCount    = counts.low    ?: 0
+                    def medCount    = counts.medium ?: 0
+                    def highCount   = counts.high   ?: 0
+
+                    reportTemplate = "SCA: Low: ${lowCount}, Medium: ${medCount}, High: ${highCount}"
+
+                    if (highCount > 0) {
+                        unstable("Found vulnerabilities with high severity")
+                        echo(reportTemplate)
+                    } else if (medCount > 0 || lowCount > 0) {
+                        echo(reportTemplate)
+                    } else {
+                        echo("No vulnerabilities found")
+                    }
                 }
             }
             post {
@@ -170,9 +186,16 @@ pipeline {
                 }
             }
         }
-        stage('Discord Notification') {
-            steps {
-                sh 'echo "Sending discord notification..."'
+    }
+
+    post {
+        always {
+            withCredentials([string(credentialsId: 'discord-webhook', variable: 'DISCORD_WEBHOOK')]) {
+                discordSend(
+                    title: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}."
+                    webhookURL: DISCORD_WEBHOOK,
+                    description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}",
+                )
             }
         }
     }
