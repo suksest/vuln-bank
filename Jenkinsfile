@@ -55,7 +55,7 @@ pipeline {
                     ).trim()
                     
                     def scaReport = "📦 **SCA**: ${totalVulns} vulnerabilities"
-                    reportTemplate = scaReport
+                    reportTemplate = reportTemplate + "\n" + scaReport
                 }
             }
             post {
