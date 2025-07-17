@@ -12,7 +12,7 @@ pipeline {
                     sh 'echo "Secret scanning..."'
                     sh '''
                         trufflehog --no-update git file://. --json | tee trufflehog-git.json
-                        trufflehog --no-update filesytem . --json | tee trufflehog-filesystem.json
+                        trufflehog --no-update filesystem . --json | tee trufflehog-filesystem.json
                     '''
 
                     script {
