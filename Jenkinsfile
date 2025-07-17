@@ -16,13 +16,16 @@ pipeline {
                     '''
 
                     script {
-                        def secretsCount = 0
+                        def secretsCountGit = 0
+                        def secretsCountFs = 0
                         if (fileExists('trufflehog-git.json')) {
-                            secretsCount = sh(script: "grep -c '^{' trufflehog-git.json || true", returnStdout: true).trim()
+                            secretsCountGit = sh(script: "grep -c '^{' trufflehog-git.json || true", returnStdout: true).trim()
                         }
                         if (fileExists('trufflehog-filesystem.json')) {
-                            secretsCount += sh(script: "grep -c '^{' trufflehog-filesystem.json || true", returnStdout: true).trim()
+                            secretsCountFs = sh(script: "grep -c '^{' trufflehog-filesystem.json || true", returnStdout: true).trim()
                         }
+
+                        def secretsCount = secretsCountGit + secretsCountFs
                         def secretsReport = "🔑 **Secret Scan**: ${secretsCount} secrets found"
                         reportTemplate = secretsReport
                     }
