@@ -1,4 +1,4 @@
-def reportTemplate = "empty"
+def reportTemplate = "Security Scan Report"
 pipeline {
     agent any
     environment {
@@ -33,26 +33,13 @@ pipeline {
                 sh 'syft scan . -o cyclonedx-json > vuln-bank-syft.json'
                 sh 'grype sbom:./vuln-bank-syft.json -o cyclonedx-json > vuln-bank-grype.json'
                 script {
-                    def severityCountsJson = sh(
-                        script: """jq 'reduce .vulnerabilities[].ratings[].severity as $s ({}; .[$s] = (.[$s] // 0) + 1)' vuln-bank-grype.json""",
+                    def totalVulns = sh(
+                        script: "jq '.vulnerabilities[] | length' vuln-bank-grype.json",
                         returnStdout: true
                     ).trim()
-
-                    def counts = new groovy.json.JsonSlurper().parseText(severityCountsJson)
-                    def lowCount    = counts.low    ?: 0
-                    def medCount    = counts.medium ?: 0
-                    def highCount   = counts.high   ?: 0
-
-                    reportTemplate = "SCA: Low: ${lowCount}, Medium: ${medCount}, High: ${highCount}"
-
-                    if (highCount > 0) {
-                        unstable("Found vulnerabilities with high severity")
-                        echo(reportTemplate)
-                    } else if (medCount > 0 || lowCount > 0) {
-                        echo(reportTemplate)
-                    } else {
-                        echo("No vulnerabilities found")
-                    }
+                    
+                    def scaReport = "📦 **SCA**: ${env.SCA_COUNT} vulnerabilities"
+                    reportTemplate = scaReport
                 }
             }
             post {
@@ -114,10 +101,8 @@ pipeline {
 
                         def json = readJSON text: response
 
-                        echo "=== Detailed Quality Gate Status ==="
-                        echo "Overall Status: ${json.projectStatus.status}"
-                        echo "Conditions: ${json.projectStatus.conditions}"
-                        echo "=== Detailed Quality Gate Status ==="
+                        def sastReport = "🔍 **SAST**: ${json.projectStatus.status}"
+                        reportTemplate = reportTemplate + "\n" + sastReport
                     }
                 }
                 failure {
@@ -149,6 +134,7 @@ pipeline {
                     ).trim()
                     
                     def TARGET_URL = "http://${APP_IP}:5000"
+                    def dastReport = "empty"
                     
                     sh "echo 'Target application URL: ${TARGET_URL}'"
 
@@ -166,13 +152,18 @@ pipeline {
 
                     if (zapExitCode == 0) {
                         echo "ZAP scan completed successfully with no warnings"
+                        dastReport = "🚨 **DAST**: PASSED ✅"
                     } else if (zapExitCode == 1) {
                         unstable("ZAP scan completed with blocker issue(s)")
+                        dastReport = "🚨 **DAST**: NOT PASSED ❌"
                     } else if (zapExitCode == 2) {
                         unstable("ZAP scan found potential issue(s)")
+                        dastReport = "🚨 **DAST**: NOT PASSED ❌"
                     } else {
                         error("ZAP scan failed with exit code ${zapExitCode}")
                     }
+
+                    reportTemplate = reportTemplate + "\n" + dastReport
                 }
             }
             post {
