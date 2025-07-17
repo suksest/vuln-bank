@@ -40,7 +40,7 @@ pipeline {
                         returnStdout: true
                     ).trim()
                     
-                    def scaReport = "📦 **SCA**: ${env.SCA_COUNT} vulnerabilities"
+                    def scaReport = "📦 **SCA**: ${totalVulns} vulnerabilities"
                     reportTemplate = scaReport
                 }
             }
