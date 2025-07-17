@@ -192,7 +192,7 @@ pipeline {
         always {
             withCredentials([string(credentialsId: 'discord-webhook', variable: 'DISCORD_WEBHOOK')]) {
                 discordSend(
-                    title: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}."
+                    title: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.",
                     webhookURL: DISCORD_WEBHOOK,
                     description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}",
                 )
