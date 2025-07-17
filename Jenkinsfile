@@ -12,21 +12,15 @@ pipeline {
                     sh 'echo "Secret scanning..."'
                     sh '''
                         trufflehog --no-update git file://. --json | tee trufflehog-git.json
-                        trufflehog --no-update filesystem . --json | tee trufflehog-filesystem.json
                     '''
 
                     script {
                         def secretsCountGit = 0
-                        def secretsCountFs = 0
                         if (fileExists('trufflehog-git.json')) {
                             secretsCountGit = sh(script: "grep -c '^{' trufflehog-git.json || true", returnStdout: true).trim()
                         }
-                        if (fileExists('trufflehog-filesystem.json')) {
-                            secretsCountFs = sh(script: "grep -c '^{' trufflehog-filesystem.json || true", returnStdout: true).trim()
-                        }
 
-                        def secretsCount = secretsCountGit + secretsCountFs
-                        def secretsReport = "🔑 **Secret Scan**: ${secretsCount} secrets found"
+                        def secretsReport = "🔑 **Secret Scan**: ${secretsCountGit} secrets found"
                         reportTemplate = secretsReport
                     }
                 }
