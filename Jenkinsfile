@@ -78,7 +78,7 @@ pipeline {
                         -Dsonar.projectKey=${env.PROJECT_NAME} \
                         -Dsonar.organization=suksest \
                         -Dsonar.sources=. \
-                        -Dsonar.excludes=*.json \
+                        -Dsonar.excludes=trufflehog-git.json,vuln-bank-grype.json,vuln-bank-syft.json,sonarqube-results-issues.json,zap-report.json \
                         -Dsonar.python.version=3.9"""
                     }
 
@@ -187,7 +187,6 @@ pipeline {
                     title: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.",
                     webhookURL: DISCORD_WEBHOOK,
                     description: "Build ${env.BUILD_DISPLAY_NAME} completed with status ${currentBuild.currentResult}.\n\n${reportTemplate}\n\n${env.BUILD_URL}",
-                    unstable: true,
                     result: currentBuild.currentResult
                 )
             }
